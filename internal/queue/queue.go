@@ -2,48 +2,50 @@ package queue
 
 import (
 	"sync"
+	"container/heap"
+
+	"pjq/internal/domain"
+	"pjq/internal/util"
 )
 
-type Queue[T any] struct {
+type Queue struct {
 	mu  sync.Mutex
-	arr []T
-	priority []int
+	heap *util.JobHeap
 }
 
-func NewQueue[T any]() *Queue[T] {
-	return &Queue[T]{
-		arr: make([]T, 0),
+func NewQueue() *Queue {
+	return &Queue{
+		heap: &util.JobHeap{},
 	}
 }
 
-func (q *Queue[T]) Push(v T) {
+func (q *Queue) Push(job domain.Job) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	q.arr = append(q.arr, v)
+	heap.Push(q.heap, job)
 }
 
-func (q *Queue[T]) Pop() (T, bool) {
+func (q *Queue) Pop() (domain.Job, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	if len(q.arr) == 0 {
-		var zero T
+	if q.heap.Len() == 0 {
+		var zero domain.Job
 		return zero, false
 	}
-	head := q.arr[0]
-	q.arr = q.arr[1:]
+	head := heap.Pop(q.heap).(domain.Job)
 	return head, true
 }
 
-func (q *Queue[T]) Len() int {
+func (q *Queue) Len() int {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	return len(q.arr)
+	return q.heap.Len()
 }
 
-func (q *Queue[T]) Snapshot() []T {
+func (q *Queue) Snapshot() []domain.Job {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	cp := make([]T, len(q.arr))
-	copy(cp, q.arr)
+	cp := make([]domain.Job, len(*q.heap))
+	copy(cp, *q.heap)
 	return cp
 }
