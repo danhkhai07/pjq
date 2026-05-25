@@ -58,14 +58,27 @@ func (jm *JobManager) RunWorker(ctx context.Context, w *worker, jobCh chan domai
 	for {
 		select {
 		case job := <-jobCh:
+			if job.StartedAt.IsZero() {
+				job.StartedAt = time.Now()
+			}
 			err = w.Process(ctx, &job)
+			job.FinishedAt = time.Now()
 			if err != nil {
 				job.Error = err.Error()
 				job.Logs = append(job.Logs, err.Error())
+				if job.Retries < job.MaxRetries {
+					jm.retry(job)
+				}
 			}
 			jm.store.Save(job)
+			time.Sleep(10 * time.Millisecond)
 		case <-ctx.Done():
 			return nil
 		}
 	}
+}
+
+func (jm *JobManager) retry(job domain.Job) {
+	job.Retries++
+	jm.PushJob(job)
 }
