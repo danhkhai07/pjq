@@ -6,7 +6,7 @@ import (
 	"pjq/internal/domain"
 )
 
-type PostJobsRequest struct {
+type PostJobRequest struct {
 	Type 			string 			`json:"type"`
 	Payload 		json.RawMessage	`json:"payload"`
 }
