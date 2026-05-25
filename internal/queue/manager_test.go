@@ -1,42 +1,40 @@
 package queue
 
 import (
-	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"pjq/internal/domain"
+	"pjq/internal/infra"
 )
 
-type MockJobHandler struct {}
-
-func (mjh *MockJobHandler) Handle(ctx context.Context, job *domain.Job, log func(string)) error {
-	fmt.Printf("Handler: handling job %v\n", job.ID)
-	time.Sleep(1 * time.Second)
-	job.Status = domain.Done
-	fmt.Printf("Handler: done job %v\n", job.ID)
-	return nil
-}
  
 func TestProcessingJob(t *testing.T) {
-	mockRegistry := NewRegistry()
-	var mockJobHandler MockJobHandler
-	mockRegistry.Register("mock", &mockJobHandler)
+	mockJobHandler := infra.NewMockJobHandler()
+	mockStore := infra.NewMockStore(make(map[string]domain.Job))
 
-	jm := NewJobManager(NewQueue(), 3, mockRegistry)
+	registry := NewRegistry()
+	registry.Register("mock", mockJobHandler)
 
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
-	go jm.Run(ctx)
+	jm := NewJobManager(NewQueue(), 3, registry, mockStore)
+
+	go jm.Run(t.Context())
 
 	job1 := domain.Job{
 		ID: "1",
 		Type: "mock",
-		Status: domain.Pending,
+		Status: domain.StatusPending,
 		Priority: 1,
 	}
 	jm.PushJob(job1)
 
 	time.Sleep(2 * time.Second)
+
+	job, err := mockStore.Get("1")
+	if err != nil {
+		t.Errorf("no job pushed to store")
+	}
+	if job.Status != domain.StatusDone {
+		t.Errorf("expected '%s', got '%s'", domain.StatusDone, job.Status)
+	}
 }
