@@ -57,10 +57,10 @@ func (w *Worker) Process(ctx context.Context, job *domain.Job) error {
 
 	err = handler.Handle(ctx, w.Job, w.Log)
 	if err != nil {
-		w.Job.Status = domain.Failed
+		w.Job.Status = domain.StatusFailed
 		w.Job.Error = err.Error()
 		return err
 	}
-	w.Job.Status = domain.Done
+	w.Job.Status = domain.StatusDone
 	return nil
 }

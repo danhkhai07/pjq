@@ -5,11 +5,11 @@ import "time"
 type Status string
 
 const (
-	Pending 	Status = "pending"
-	Running		Status = "running"
-	Done		Status = "done"
-	Failed		Status = "failed"
-	Retrying	Status = "retrying"
+	StatusPending 		Status = "pending"
+	StatusRunning		Status = "running"
+	StatusDone			Status = "done"
+	StatusFailed		Status = "failed"
+	StatusRetrying		Status = "retrying"
 )
 
 type Job struct {
@@ -25,4 +25,28 @@ type Job struct {
 	FinishedAt time.Time
 	Error string
 	Logs []string
+}
+
+func NewJob(
+	id string,
+	jobType string,
+	payload []byte,
+	priority int,
+	maxRetries int,
+) *Job {
+	job := Job{
+		ID: id,
+		Type: jobType,
+		Payload: payload,
+		Status: StatusPending,
+		Priority: priority,
+		Retries: 0,
+		MaxRetries: maxRetries,
+		CreatedAt: time.Now(),
+		StartedAt: time.Time{},
+		FinishedAt: time.Time{},
+		Error: "",
+		Logs: nil,
+	}
+	return &job
 }

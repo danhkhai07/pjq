@@ -1,5 +1,7 @@
 package domain
 
-var (
+import "errors"
 
+var (
+	ErrInvalidJobFields error = errors.New("invalid job fields")
 )
