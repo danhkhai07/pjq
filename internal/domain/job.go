@@ -46,7 +46,7 @@ func NewJob(
 		StartedAt: time.Time{},
 		FinishedAt: time.Time{},
 		Error: "",
-		Logs: nil,
+		Logs: make([]string, 0, 10),
 	}
 	return &job
 }
