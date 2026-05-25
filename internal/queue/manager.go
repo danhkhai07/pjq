@@ -13,10 +13,10 @@ type JobManager struct {
 	workerPool 	[]*worker
 	numWorkers 	int
 	registry  	*Registry
-	store 		*domain.JobStore
+	store 		domain.JobStore
 }
 
-func NewJobManager(queue *Queue, numWorkers int, registry *Registry, store *domain.JobStore) *JobManager {
+func NewJobManager(queue *Queue, numWorkers int, registry *Registry, store domain.JobStore) *JobManager {
 	jm := JobManager{
 		queue: queue,
 		jobCh: make(chan domain.Job, numWorkers),
@@ -36,7 +36,7 @@ func (jm *JobManager) Run(ctx context.Context) {
 	for i := range jm.workerPool {
 		w := newWorker(i, jm.registry)
 		jm.workerPool[i] = w
-		go RunWorker(ctx, w, jm.jobCh)
+		go jm.RunWorker(ctx, w, jm.jobCh)
 	}
 
 	for {
@@ -54,7 +54,7 @@ func (jm *JobManager) Run(ctx context.Context) {
 	}
 }
 
-func RunWorker(ctx context.Context, w *worker, jobCh chan domain.Job) (err error) {
+func (jm *JobManager) RunWorker(ctx context.Context, w *worker, jobCh chan domain.Job) (err error) {
 	for {
 		select {
 		case job := <-jobCh:
@@ -63,7 +63,7 @@ func RunWorker(ctx context.Context, w *worker, jobCh chan domain.Job) (err error
 				job.Error = err.Error()
 				job.Logs = append(job.Logs, err.Error())
 			}
-
+			jm.store.Save(job)
 		case <-ctx.Done():
 			return nil
 		}
