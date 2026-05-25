@@ -1,9 +1,11 @@
 package domain
 
+// Retriable: true - check if job can be retried | false - pass
 type JobFilter struct {
 	Status 		*Status
 	Type 		*string
 	Priority 	*int
+	Retriable 	bool
 }
 
 func (jf JobFilter) Pass(job Job) bool {
@@ -16,6 +18,9 @@ func (jf JobFilter) Pass(job Job) bool {
 	if jf.Priority != nil && *jf.Priority != job.Priority {
 		return false
 	}
+	if jf.Retriable && job.Retries >= job.MaxRetries {
+		return false
+	} 
 	return true
 }
 
