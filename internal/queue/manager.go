@@ -7,7 +7,7 @@ import (
 	"pjq/internal/domain"
 )
 
-type JobManager struct {
+type QueueManager struct {
 	queue		*Queue
 	jobCh 		chan domain.Job
 	workerPool 	[]*worker
@@ -16,8 +16,8 @@ type JobManager struct {
 	store 		domain.JobStore
 }
 
-func NewJobManager(queue *Queue, numWorkers int, registry *Registry, store domain.JobStore) *JobManager {
-	jm := JobManager{
+func NewQueueManager(queue *Queue, numWorkers int, registry *Registry, store domain.JobStore) *QueueManager {
+	qm := QueueManager{
 		queue: queue,
 		jobCh: make(chan domain.Job, numWorkers),
 		workerPool: make([]*worker, numWorkers),
@@ -25,18 +25,18 @@ func NewJobManager(queue *Queue, numWorkers int, registry *Registry, store domai
 		registry: registry,
 		store: store,
 	}
-	return &jm
+	return &qm
 }
 
-func (jm *JobManager) PushJob(job domain.Job) {
-	jm.queue.Push(job)
+func (qm *QueueManager) PushJob(job domain.Job) {
+	qm.queue.Push(job)
 }
 
-func (jm *JobManager) Run(ctx context.Context) {
-	for i := range jm.workerPool {
-		w := newWorker(i, jm.registry)
-		jm.workerPool[i] = w
-		go jm.RunWorker(ctx, w, jm.jobCh)
+func (qm *QueueManager) Run(ctx context.Context) {
+	for i := range qm.workerPool {
+		w := newWorker(i, qm.registry)
+		qm.workerPool[i] = w
+		go qm.RunWorker(ctx, w, qm.jobCh)
 	}
 
 	for {
@@ -44,17 +44,17 @@ func (jm *JobManager) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			job, ok := jm.queue.Pop()
+			job, ok := qm.queue.Pop()
 			if !ok {
 				time.Sleep(10 * time.Millisecond)
 				continue
 			}
-			jm.jobCh <- job
+			qm.jobCh <- job
 		}
 	}
 }
 
-func (jm *JobManager) RunWorker(ctx context.Context, w *worker, jobCh chan domain.Job) (err error) {
+func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan domain.Job) (err error) {
 	for {
 		select {
 		case job := <-jobCh:
@@ -67,10 +67,10 @@ func (jm *JobManager) RunWorker(ctx context.Context, w *worker, jobCh chan domai
 				job.Error = err.Error()
 				job.Logs = append(job.Logs, err.Error())
 				if job.Retries < job.MaxRetries {
-					jm.retry(job)
+					qm.retry(job)
 				}
 			}
-			jm.store.Save(job)
+			qm.store.Save(job)
 			time.Sleep(10 * time.Millisecond)
 		case <-ctx.Done():
 			return nil
@@ -78,7 +78,7 @@ func (jm *JobManager) RunWorker(ctx context.Context, w *worker, jobCh chan domai
 	}
 }
 
-func (jm *JobManager) retry(job domain.Job) {
+func (qm *QueueManager) retry(job domain.Job) {
 	job.Retries++
-	jm.PushJob(job)
+	qm.PushJob(job)
 }
