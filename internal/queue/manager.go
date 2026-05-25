@@ -26,6 +26,10 @@ func NewJobManager(queue *Queue, numWorkers int, registry *Registry) *JobManager
 	return &jm
 }
 
+func (jm *JobManager) PushJob(job domain.Job) {
+	jm.queue.Push(job)
+}
+
 func (jm *JobManager) Run(ctx context.Context) {
 	for i := range jm.workerPool {
 		w := NewWorker(i, jm.registry)
