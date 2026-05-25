@@ -10,18 +10,20 @@ import (
 type JobManager struct {
 	queue		*Queue
 	jobCh 		chan domain.Job
-	workerPool 	[]*Worker
+	workerPool 	[]*worker
 	numWorkers 	int
 	registry  	*Registry
+	store 		*domain.JobStore
 }
 
-func NewJobManager(queue *Queue, numWorkers int, registry *Registry) *JobManager {
+func NewJobManager(queue *Queue, numWorkers int, registry *Registry, store *domain.JobStore) *JobManager {
 	jm := JobManager{
 		queue: queue,
 		jobCh: make(chan domain.Job, numWorkers),
-		workerPool: make([]*Worker, numWorkers),
+		workerPool: make([]*worker, numWorkers),
 		numWorkers: numWorkers,
 		registry: registry,
+		store: store,
 	}
 	return &jm
 }
@@ -32,7 +34,7 @@ func (jm *JobManager) PushJob(job domain.Job) {
 
 func (jm *JobManager) Run(ctx context.Context) {
 	for i := range jm.workerPool {
-		w := NewWorker(i, jm.registry)
+		w := newWorker(i, jm.registry)
 		jm.workerPool[i] = w
 		go RunWorker(ctx, w, jm.jobCh)
 	}
@@ -52,7 +54,7 @@ func (jm *JobManager) Run(ctx context.Context) {
 	}
 }
 
-func RunWorker(ctx context.Context, w *Worker, jobCh chan domain.Job) (err error) {
+func RunWorker(ctx context.Context, w *worker, jobCh chan domain.Job) (err error) {
 	for {
 		select {
 		case job := <-jobCh:
@@ -61,7 +63,7 @@ func RunWorker(ctx context.Context, w *Worker, jobCh chan domain.Job) (err error
 				job.Error = err.Error()
 				job.Logs = append(job.Logs, err.Error())
 			}
-			// store job
+
 		case <-ctx.Done():
 			return nil
 		}

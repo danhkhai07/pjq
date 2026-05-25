@@ -14,53 +14,53 @@ var (
 	ErrWorkerIsBusy error = errors.New("worker is busy")
 )
 
-type Worker struct {
-	ID 			int
-	Job 		*domain.Job
-	Registry	*Registry
+type worker struct {
+	id 			int
+	job 		*domain.Job
+	registry	*Registry
 	busy 		atomic.Bool
 }
 
-func NewWorker(id int, registry *Registry) *Worker {
-	return &Worker{
-		ID: id,
-		Registry: registry,
+func newWorker(id int, registry *Registry) *worker {
+	return &worker{
+		id: id,
+		registry: registry,
 	}
 }
 
-func (w *Worker) IsBusy() bool {
+func (w *worker) IsBusy() bool {
 	return w.busy.Load()
 }
 
-func (w *Worker) Log(message string) {
-	if w.Job != nil {
-		w.Job.Logs = append(w.Job.Logs, message)
+func (w *worker) Log(message string) {
+	if w.job != nil {
+		w.job.Logs = append(w.job.Logs, message)
 		return
 	} 
-	fmt.Fprintf(os.Stderr, "error: cannot log with no job as worker id %d\n", w.ID)
+	fmt.Fprintf(os.Stderr, "error: cannot log with no job as worker id %d\n", w.id)
 }
 
-func (w *Worker) Process(ctx context.Context, job *domain.Job) error {
+func (w *worker) Process(ctx context.Context, job *domain.Job) error {
 	if w.IsBusy() {
-		return fmt.Errorf("error: worker id %d is busy\n", w.ID)
+		return fmt.Errorf("error: worker id %d is busy\n", w.id)
 	}
 
 	w.busy.Store(true)
-	w.Job = job
+	w.job = job
 	defer w.busy.Store(false)
-	defer func() { w.Job = nil }()
+	defer func() { w.job = nil }()
 
-	handler, err := w.Registry.Get(w.Job.Type)
+	handler, err := w.registry.Get(w.job.Type)
 	if err != nil {
 		return err
 	}
 
-	err = handler.Handle(ctx, w.Job, w.Log)
+	err = handler.Handle(ctx, w.job, w.Log)
 	if err != nil {
-		w.Job.Status = domain.StatusFailed
-		w.Job.Error = err.Error()
+		w.job.Status = domain.StatusFailed
+		w.job.Error = err.Error()
 		return err
 	}
-	w.Job.Status = domain.StatusDone
+	w.job.Status = domain.StatusDone
 	return nil
 }
