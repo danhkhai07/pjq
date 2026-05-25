@@ -21,8 +21,8 @@ type Worker struct {
 	busy 		atomic.Bool
 }
 
-func NewWorker(id int, registry *Registry) Worker {
-	return Worker{
+func NewWorker(id int, registry *Registry) *Worker {
+	return &Worker{
 		ID: id,
 		Registry: registry,
 	}
