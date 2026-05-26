@@ -54,6 +54,7 @@ func (svr *Server) PostJobHandler(w http.ResponseWriter, r *http.Request) {
 			Error: "bad request",
 		}
 		writeJSON(w, http.StatusBadRequest, errResp)
+		return
 	}
 	
 	jobID := svr.jobService.ProcessNewJob(req.Type, req.Payload)
@@ -98,9 +99,11 @@ func (svr *Server) GetJobByIDHandler(w http.ResponseWriter, r *http.Request) {
 // GET /jobs
 func (svr *Server) GetJobsByFilter(w http.ResponseWriter, r *http.Request) {
 	filter := domain.JobFilter{}
-	ok := readJSON(w, r, &filter)
-	if !ok {
-		return
+	if r.Header.Get("Content-Type") == "application/json" {
+		ok := readJSON(w, r, &filter)
+		if !ok {
+			return
+		}
 	}
 
 	jobs, err := svr.jobService.ListJobsWithFilter(filter)
@@ -123,6 +126,7 @@ func (svr *Server) GetJobsByFilter(w http.ResponseWriter, r *http.Request) {
 
 	resp := dto.ListJobsResponse{
 		Jobs: jobsResponse,
+		Total: len(jobsResponse),
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

@@ -13,9 +13,9 @@ type PostJobRequest struct {
 
 func (req *PostJobRequest) IsMissingFields() bool {
 	if req.Type == "" || req.Payload == nil {
-		return false
+		return true
 	}
-	return true
+	return false
 }
 
 type GetJobsWithFilterRequest struct {

@@ -27,6 +27,8 @@ func (svr *Server) Run(
 	ctx, osCancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer osCancel()
 
+	go svr.jobService.Run(ctx)
+
 	go func() {
 		err := svr.httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {

@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"pjq/internal/domain"
 	"pjq/internal/queue"
 	"pjq/internal/util"
@@ -24,6 +25,10 @@ func NewJobService(
 		store: store,
 		queueManager: queueManager,
 	}
+}
+
+func (js *JobService) Run(ctx context.Context) {
+	js.queueManager.Run(ctx)
 }
 
 // Return new job id.
