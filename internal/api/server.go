@@ -55,15 +55,15 @@ func (svr *Server) Run(
 func NewServer(
 	addr string,
 	jobService *application.JobService,
-) (svr *Server) {
-	svr = &Server{
+) *Server {
+	svr := &Server{
 		addr: addr,
 		httpServer: &http.Server{
 			Addr: addr,
-			Handler: NewHttpHandler(svr),
 		},
 		jobService: jobService,
 	}
+	svr.httpServer.Handler = NewHttpHandler(svr)
 	return svr
 }
 
