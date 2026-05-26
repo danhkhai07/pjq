@@ -17,12 +17,13 @@ type Job struct {
 	Type string
 	Payload []byte
 	Status Status
+	Result any
 	Priority int
 	Retries int
 	MaxRetries int
 	CreatedAt time.Time
-	StartedAt time.Time
-	FinishedAt time.Time
+	StartedAt *time.Time
+	FinishedAt *time.Time
 	Error string
 	Logs []string
 }
@@ -39,12 +40,13 @@ func NewJob(
 		Type: jobType,
 		Payload: payload,
 		Status: StatusPending,
+		Result: nil,
 		Priority: priority,
 		Retries: 0,
 		MaxRetries: maxRetries,
 		CreatedAt: time.Now(),
-		StartedAt: time.Time{},
-		FinishedAt: time.Time{},
+		StartedAt: nil,
+		FinishedAt: nil,
 		Error: "",
 		Logs: make([]string, 0, 10),
 	}

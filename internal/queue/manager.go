@@ -58,11 +58,12 @@ func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan dom
 	for {
 		select {
 		case job := <-jobCh:
-			if job.StartedAt.IsZero() {
-				job.StartedAt = time.Now()
+			now := time.Now()
+			if job.StartedAt == nil {
+				job.StartedAt = &now
 			}
 			err = w.Process(ctx, &job)
-			job.FinishedAt = time.Now()
+			job.FinishedAt = &now
 			if err != nil {
 				job.Error = err.Error()
 				job.Logs = append(job.Logs, err.Error())
