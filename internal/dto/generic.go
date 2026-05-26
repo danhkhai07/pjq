@@ -10,6 +10,5 @@ type StatusResponse struct {
 }
 
 type ErrorResponse struct {
-	Error 			string `json:"status"`
-	Message			string `json:"message"`
+	Error 			string `json:"error"`
 }

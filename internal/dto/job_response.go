@@ -25,6 +25,23 @@ type JobResponse struct {
 	Logs 		[]string		`json:"logs"`
 }
 
+func NewJobResponse(job domain.Job) JobResponse {
+	return JobResponse{
+		ID: 			job.ID,
+		Type: 			job.Type,
+		Payload: 		job.Payload,
+		Status: 		job.Status,
+		Priority: 		job.Priority,
+		Retries: 		job.Retries,
+		MaxRetries: 	job.MaxRetries,
+		CreatedAt: 		job.CreatedAt,
+		StartedAt: 		job.StartedAt,
+		FinishedAt: 	job.FinishedAt,
+		Error: 			job.Error,
+		Logs: 			job.Logs,
+	}
+}
+
 
 type ListJobsResponse struct {
 	Jobs 		[]JobResponse	`json:"jobs"`
