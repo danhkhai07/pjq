@@ -9,12 +9,14 @@ import (
 	"os/signal"
 	"sync"
 	"time"
+
+	"pjq/internal/application"
 )
 
 type Server struct {
-	addr string
-	
-	httpServer *http.Server
+	addr 			string
+	httpServer 		*http.Server
+	jobService		*application.JobService
 }
 
 func (svr *Server) Run(
@@ -52,7 +54,7 @@ func (svr *Server) Run(
 
 func NewServer(
 	addr string,
-
+	jobService *application.JobService,
 ) (svr *Server) {
 	svr = &Server{
 		addr: addr,
@@ -60,6 +62,7 @@ func NewServer(
 			Addr: addr,
 			Handler: NewHttpHandler(svr),
 		},
+		jobService: jobService,
 	}
 	return svr
 }
