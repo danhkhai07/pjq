@@ -33,7 +33,7 @@ func NewJob(
 	payload []byte,
 	priority int,
 	maxRetries int,
-) *Job {
+) Job {
 	job := Job{
 		ID: id,
 		Type: jobType,
@@ -48,5 +48,5 @@ func NewJob(
 		Error: "",
 		Logs: make([]string, 0, 10),
 	}
-	return &job
+	return job
 }
