@@ -47,3 +47,7 @@ func (js *JobService) ProcessNewJob(
 func (js *JobService) GetJobByID(id string) (domain.Job, error) {
 	return js.store.Get(id)
 }
+
+func (js *JobService) ListJobsWithFilter(filter domain.JobFilter) ([]domain.Job, error) {
+	return js.store.List(filter)
+}
