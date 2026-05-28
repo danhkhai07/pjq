@@ -4,7 +4,6 @@ package domain
 type JobFilter struct {
 	Status 		*Status
 	Type 		*string
-	Priority 	*int
 	Retriable 	bool
 }
 
@@ -13,9 +12,6 @@ func (jf JobFilter) Pass(job Job) bool {
 		return false
 	}
 	if jf.Type != nil && *jf.Type != job.Type {
-		return false
-	}
-	if jf.Priority != nil && *jf.Priority != job.Priority {
 		return false
 	}
 	if jf.Retriable && job.Retries >= job.MaxRetries {
