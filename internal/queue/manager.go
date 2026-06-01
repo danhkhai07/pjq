@@ -80,6 +80,7 @@ func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan dom
 }
 
 func (qm *QueueManager) retry(job domain.Job) {
+	job.Status = domain.StatusRetrying
 	job.Retries++
 	qm.PushJob(job)
 }
