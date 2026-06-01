@@ -35,7 +35,7 @@ func (js *JobService) Run(ctx context.Context) {
 func (js *JobService) ProcessNewJob(
 	jobType string,
 	payload []byte,
-) string {
+) (string, error) {
 	jobID := util.GenerateULID()
 	job := domain.NewJob(
 		jobID,
@@ -44,9 +44,12 @@ func (js *JobService) ProcessNewJob(
 		PRIORITY_DEFAULT,
 		MAX_RETRIES_DEFAULT,
 	)
-	js.store.Save(job)
+	err := js.store.Save(job)
+	if err != nil {
+		return "", err
+	}
 	js.queueManager.PushJob(job)
-	return jobID
+	return jobID, nil
 }
 
 func (js *JobService) GetJobByID(id string) (domain.Job, error) {

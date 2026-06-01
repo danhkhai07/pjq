@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"pjq/internal/domain"
@@ -57,7 +58,15 @@ func (svr *Server) PostJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	jobID := svr.jobService.ProcessNewJob(req.Type, req.Payload)
+	jobID, err := svr.jobService.ProcessNewJob(req.Type, req.Payload)
+	if err != nil {
+		log.Print(err)
+		errResp := dto.ErrorResponse{
+			Error: "internal error",
+		}
+		writeJSON(w, http.StatusBadRequest, errResp)
+		return 
+	}
 
 	resp := dto.JobIDResponse{
 		ID: jobID,
@@ -86,6 +95,7 @@ func (svr *Server) GetJobByIDHandler(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusNotFound, errResp)
 			return
 		default:
+			log.Print(err)
 			errResp.Error = "internal server error"
 			writeJSON(w, http.StatusInternalServerError, errResp)
 			return
@@ -113,6 +123,7 @@ func (svr *Server) GetJobsByFilter(w http.ResponseWriter, r *http.Request) {
 		}
 		switch err {
 		default:
+			log.Print(err)
 			errResp.Error = "internal server error"
 			writeJSON(w, http.StatusInternalServerError, errResp)
 			return
