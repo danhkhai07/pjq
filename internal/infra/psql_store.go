@@ -4,10 +4,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"context"
 
 	"pjq/internal/domain"
 
 	_ "github.com/lib/pq"
+)
+
+const (
+	SELECT_STAR_JOB = `SELECT id, type, payload, status, priority, retries, max_retries, error, result, logs, created_at, started_at, finished_at FROM jobs`
 )
 
 type PSQLStore struct {
@@ -25,9 +30,9 @@ func NewPSQLStore(connStr string) (*PSQLStore, error) {
 	return &PSQLStore{ db }, nil
 }
 
-func (s *PSQLStore) Save(job domain.Job) error {
+func (s *PSQLStore) Save(ctx context.Context, job domain.Job) error {
 	logs, _ := json.Marshal(job.Logs)
-	_, err := s.db.Exec(`
+	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO jobs(id, type, payload, status, priority, retries, max_retries, error, result, logs, created_at, started_at, finished_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, $12, $13)
 		ON CONFLICT(id) DO UPDATE SET
@@ -47,21 +52,21 @@ func (s *PSQLStore) Save(job domain.Job) error {
 	return err
 }
 
-func (s *PSQLStore) Get(id string) (domain.Job, error) {
-	row := s.db.QueryRow(selectStarJob() + ` WHERE id=$1;`, id)
+func (s *PSQLStore) Get(ctx context.Context, id string) (domain.Job, error) {
+	row := s.db.QueryRowContext(ctx, SELECT_STAR_JOB + ` WHERE id=$1;`, id)
 	return scanJob(row)
 }
 
-func (s *PSQLStore) Delete(id string) error {
-	_, err := s.db.Exec(`DELETE FROM jobs WHERE id = $1`, id)
+func (s *PSQLStore) Delete(ctx context.Context, id string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM jobs WHERE id = $1`, id)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *PSQLStore) List(filter domain.JobFilter) ([]domain.Job, error) {
-	query := selectStarJob() + ` WHERE 1=1`
+func (s *PSQLStore) List(ctx context.Context, filter domain.JobFilter) ([]domain.Job, error) {
+	query := SELECT_STAR_JOB + ` WHERE 1=1`
 	args := []any{}
 	i := 1
 
@@ -79,7 +84,7 @@ func (s *PSQLStore) List(filter domain.JobFilter) ([]domain.Job, error) {
 		query += ` AND retries < max_retries`
 	}
 
-	rows, err := s.db.Query(query, args...)
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,11 +99,6 @@ func (s *PSQLStore) List(filter domain.JobFilter) ([]domain.Job, error) {
 		jobs = append(jobs, job)
 	}
 	return jobs, nil
-}
-
-func selectStarJob() string {
-	return `SELECT id, type, payload, status, priority, retries, max_retries, error, result, logs, created_at, started_at, finished_at FROM jobs`
-
 }
 
 func scanJob(row interface{ Scan (...any) error }) (domain.Job, error) {

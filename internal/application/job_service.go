@@ -33,6 +33,7 @@ func (js *JobService) Run(ctx context.Context) {
 
 // Return new job id.
 func (js *JobService) ProcessNewJob(
+	ctx context.Context,
 	jobType string,
 	payload []byte,
 ) (string, error) {
@@ -44,7 +45,7 @@ func (js *JobService) ProcessNewJob(
 		PRIORITY_DEFAULT,
 		MAX_RETRIES_DEFAULT,
 	)
-	err := js.store.Save(job)
+	err := js.store.Save(ctx, job)
 	if err != nil {
 		return "", err
 	}
@@ -52,10 +53,10 @@ func (js *JobService) ProcessNewJob(
 	return jobID, nil
 }
 
-func (js *JobService) GetJobByID(id string) (domain.Job, error) {
-	return js.store.Get(id)
+func (js *JobService) GetJobByID(ctx context.Context, id string) (domain.Job, error) {
+	return js.store.Get(ctx, id)
 }
 
-func (js *JobService) ListJobsWithFilter(filter domain.JobFilter) ([]domain.Job, error) {
-	return js.store.List(filter)
+func (js *JobService) ListJobsWithFilter(ctx context.Context, filter domain.JobFilter) ([]domain.Job, error) {
+	return js.store.List(ctx, filter)
 }

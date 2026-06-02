@@ -76,7 +76,7 @@ func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan dom
 			} else {
 				changeStatus(&job, domain.StatusDone)
 			}
-			qm.store.Save(job)
+			qm.store.Save(ctx, job)
 			time.Sleep(10 * time.Millisecond)
 		case <-ctx.Done():
 			return nil

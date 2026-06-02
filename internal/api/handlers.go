@@ -58,7 +58,7 @@ func (svr *Server) PostJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	jobID, err := svr.jobService.ProcessNewJob(req.Type, req.Payload)
+	jobID, err := svr.jobService.ProcessNewJob(r.Context(), req.Type, req.Payload)
 	if err != nil {
 		log.Print(err)
 		errResp := dto.ErrorResponse{
@@ -85,7 +85,7 @@ func (svr *Server) GetJobByIDHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, err := svr.jobService.GetJobByID(jobID)
+	job, err := svr.jobService.GetJobByID(r.Context(), jobID)
 	if err != nil {
 		errResp := dto.ErrorResponse{
 			Error: err.Error(),
@@ -116,7 +116,7 @@ func (svr *Server) GetJobsByFilter(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	jobs, err := svr.jobService.ListJobsWithFilter(filter)
+	jobs, err := svr.jobService.ListJobsWithFilter(r.Context(), filter)
 	if err != nil {
 		errResp := dto.ErrorResponse{
 			Error: err.Error(),

@@ -1,5 +1,7 @@
 package domain
 
+import "context"
+
 // Retriable: true - check if job can be retried | false - pass
 type JobFilter struct {
 	Status 		*Status
@@ -21,8 +23,8 @@ func (jf JobFilter) Pass(job Job) bool {
 }
 
 type JobStore interface {
-	Save(job Job) error
-	Get(id string) (Job, error)
-	Delete(id string) error
-	List(filter JobFilter) ([]Job, error)
+	Save(ctx context.Context, job Job) error
+	Get(ctx context.Context, id string) (Job, error)
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context, filter JobFilter) ([]Job, error)
 }
