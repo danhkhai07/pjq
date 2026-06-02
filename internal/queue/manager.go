@@ -62,14 +62,19 @@ func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan dom
 			if job.StartedAt == nil {
 				job.StartedAt = &now
 			}
+			changeStatus(&job, domain.StatusRunning)
 			err = w.Process(ctx, &job)
 			job.FinishedAt = &now
 			if err != nil {
+				changeStatus(&job, domain.StatusFailed)
 				job.Error = err.Error()
 				job.Logs = append(job.Logs, err.Error())
 				if job.Retries < job.MaxRetries {
+					changeStatus(&job, domain.StatusRetrying)
 					qm.retry(job)
 				}
+			} else {
+				changeStatus(&job, domain.StatusDone)
 			}
 			qm.store.Save(job)
 			time.Sleep(10 * time.Millisecond)
@@ -79,8 +84,12 @@ func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan dom
 	}
 }
 
+func changeStatus(job *domain.Job, status domain.Status) {
+	job.Status = status
+	job.Logs = append(job.Logs, "QueueManager: Changed job status to %s", string(status))
+}
+
 func (qm *QueueManager) retry(job domain.Job) {
-	job.Status = domain.StatusRetrying
 	job.Retries++
 	qm.PushJob(job)
 }
