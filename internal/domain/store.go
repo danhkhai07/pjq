@@ -27,4 +27,5 @@ type JobStore interface {
 	Get(ctx context.Context, id string) (Job, error)
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, filter JobFilter) ([]Job, error)
+	Recover(ctx context.Context) ([]Job, error)
 }

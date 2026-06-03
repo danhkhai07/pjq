@@ -2,6 +2,8 @@ package application
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"pjq/internal/domain"
 	"pjq/internal/queue"
 	"pjq/internal/util"
@@ -28,6 +30,14 @@ func NewJobService(
 }
 
 func (js *JobService) Run(ctx context.Context) {
+	jobs, err := js.store.Recover(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to recover jobs from database: %s\n", err)
+	} else {
+		for _, job := range jobs {
+			js.queueManager.PushJob(job)
+		}
+	}
 	js.queueManager.Run(ctx)
 }
 

@@ -15,7 +15,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to load environment variables.")
+		fmt.Fprintf(os.Stderr, "Failed to load environment variables: %s\n", err)
 	}
 	DB_URL := os.Getenv("POSTGRES_URL")
 

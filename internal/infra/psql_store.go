@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	SELECT_STAR_JOB = `SELECT id, type, payload, status, priority, retries, max_retries, error, result, logs, created_at, started_at, finished_at FROM jobs`
+	SELECT_STAR_JOB = `SELECT id, type, payload, status, priority, retries, max_retries, error, result, logs, created_at, started_at, finished_at FROM jobs `
 )
 
 type PSQLStore struct {
@@ -91,6 +91,27 @@ func (s *PSQLStore) List(ctx context.Context, filter domain.JobFilter) ([]domain
 	defer rows.Close()
 
 	var jobs []domain.Job
+	for rows.Next() {
+		job, err := scanJob(rows)
+		if err != nil {
+			return nil, err
+		}
+		jobs = append(jobs, job)
+	}
+	return jobs, nil
+}
+
+func (s *PSQLStore) Recover(ctx context.Context) ([]domain.Job, error) {
+	rows, err := s.db.QueryContext(ctx,
+		SELECT_STAR_JOB +
+		` WHERE status in ('pending', 'running')`,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	jobs := []domain.Job{}
+
 	for rows.Next() {
 		job, err := scanJob(rows)
 		if err != nil {
