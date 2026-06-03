@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"pjq/internal/domain"
@@ -86,7 +87,10 @@ func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan dom
 
 func changeStatus(job *domain.Job, status domain.Status) {
 	job.Status = status
-	job.Logs = append(job.Logs, "QueueManager: Changed job status to %s", string(status))
+	job.Logs = append(
+		job.Logs, 
+		fmt.Sprintf("QueueManager: Changed job status to '%s'.", status),
+	)
 }
 
 func (qm *QueueManager) retry(job domain.Job) {
