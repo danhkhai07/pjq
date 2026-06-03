@@ -3,17 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"pjq/internal/api"
 	"pjq/internal/application"
 	"pjq/internal/infra"
 	queuePackage "pjq/internal/queue"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to load environment variables.")
+	}
+	DB_URL := os.Getenv("POSTGRES_URL")
+
 	queue 			:= queuePackage.NewQueue()
-	store, err 		:= infra.NewPSQLStore(
-		"postgres://postgres:gratefultobealive@localhost:5432/pjq_db?sslmode=disable",
-	)
+	store, err 		:= infra.NewPSQLStore(DB_URL)
 	if err != nil {
 		fmt.Println("DB failed to start.")
 	}

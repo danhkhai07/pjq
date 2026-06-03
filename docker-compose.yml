@@ -5,6 +5,8 @@ services:
       - "8080:${APP_PORT}"
     env_file:
       - .env
+    environment:
+      POSTGRES_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
