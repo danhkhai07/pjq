@@ -12,6 +12,7 @@ type QueueManager struct {
 	queue		*Queue
 	jobCh 		chan domain.Job
 	workerPool 	[]*worker
+	wakeup		chan struct{}
 	numWorkers 	int
 	registry  	*Registry
 	store 		domain.JobStore
@@ -33,6 +34,10 @@ func (qm *QueueManager) PushJob(job domain.Job) {
 	qm.queue.Push(job)
 }
 
+func (qm *QueueManager) WakeUp() {
+	qm.wakeup <-struct{}{}
+}
+
 func (qm *QueueManager) Run(ctx context.Context) {
 	for i := range qm.workerPool {
 		w := newWorker(i, qm.registry)
@@ -45,12 +50,45 @@ func (qm *QueueManager) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			job, ok := qm.queue.Pop()
-			if !ok {
-				time.Sleep(10 * time.Millisecond)
+			next := qm.queue.Peek()
+
+			if next == nil {
+				select {
+				case <-ctx.Done():
+					return
+				case <-qm.wakeup:
+					continue
+				}
+			}
+
+			wait := time.Until(*next.RunAt)
+			if wait <= 0 {
+				job, ok := qm.queue.Pop()
+				if ok {
+					qm.jobCh <- job
+				}
 				continue
 			}
-			qm.jobCh <- job
+			timer := time.NewTimer(wait)
+
+			select {
+			case <-ctx.Done():
+				if !timer.Stop() {
+					<-timer.C
+				}
+				return
+			case <-qm.wakeup:
+				if !timer.Stop() {
+					<-timer.C
+				}
+				continue
+			case <-timer.C:
+				job, ok := qm.queue.Pop()
+				if ok {
+					qm.jobCh <- job
+				}
+				continue
+			}
 		}
 	}
 }
