@@ -54,7 +54,7 @@ func (js *JobService) ProcessNewJob(
 		jobID,
 		jobType,
 		payload,
-
+		runAt,
 		PRIORITY_DEFAULT,
 		MAX_RETRIES_DEFAULT,
 	)
