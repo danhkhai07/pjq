@@ -37,6 +37,7 @@ func NewJob(
 	priority int,
 	maxRetries int,
 ) Job {
+	now := time.Now()
 	job := Job{
 		ID: id,
 		Type: jobType,
@@ -46,7 +47,7 @@ func NewJob(
 		Priority: priority,
 		Retries: 0,
 		MaxRetries: maxRetries,
-		CreatedAt: time.Now(),
+		CreatedAt: now,
 		StartedAt: nil,
 		FinishedAt: nil,
 		RunAt: runAt,
@@ -54,7 +55,7 @@ func NewJob(
 		Logs: make([]string, 0, 10),
 	}
 	if job.RunAt == nil {
-		job.RunAt = &job.CreatedAt
+		job.RunAt = &now
 	}
 	return job
 }

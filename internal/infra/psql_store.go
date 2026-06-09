@@ -33,8 +33,8 @@ func NewPSQLStore(connStr string) (*PSQLStore, error) {
 func (s *PSQLStore) Save(ctx context.Context, job domain.Job) error {
 	logs, _ := json.Marshal(job.Logs)
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO jobs(id, type, payload, status, priority, retries, max_retries, error, result, logs, created_at, started_at, finished_at)
-		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, $12, $13)
+		INSERT INTO jobs(id, type, payload, status, priority, retries, max_retries, error, result, logs, created_at, started_at, finished_at, run_at)
+		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 		ON CONFLICT(id) DO UPDATE SET
 			status      = EXCLUDED.status,
             retries     = EXCLUDED.retries,
@@ -48,7 +48,7 @@ func (s *PSQLStore) Save(ctx context.Context, job domain.Job) error {
 		job.ID, job.Type, job.Payload, job.Status,
 		job.Priority, job.Retries, job.MaxRetries,
         job.Error, job.Result, logs, job.CreatedAt,
-		job.StartedAt, job.FinishedAt,
+		job.StartedAt, job.FinishedAt, job.RunAt,
 	)
 	return err
 }
