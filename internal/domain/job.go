@@ -53,5 +53,8 @@ func NewJob(
 		Error: "",
 		Logs: make([]string, 0, 10),
 	}
+	if job.RunAt == nil {
+		job.RunAt = &job.CreatedAt
+	}
 	return job
 }
