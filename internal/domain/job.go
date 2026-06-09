@@ -24,6 +24,7 @@ type Job struct {
 	CreatedAt time.Time
 	StartedAt *time.Time
 	FinishedAt *time.Time
+	RunAt *time.Time
 	Error string
 	Logs []string
 }
@@ -32,6 +33,7 @@ func NewJob(
 	id string,
 	jobType string,
 	payload []byte,
+	runAt *time.Time,
 	priority int,
 	maxRetries int,
 ) Job {
@@ -47,6 +49,7 @@ func NewJob(
 		CreatedAt: time.Now(),
 		StartedAt: nil,
 		FinishedAt: nil,
+		RunAt: runAt,
 		Error: "",
 		Logs: make([]string, 0, 10),
 	}

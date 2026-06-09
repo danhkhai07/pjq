@@ -58,7 +58,7 @@ func (svr *Server) PostJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	jobID, err := svr.jobService.ProcessNewJob(r.Context(), req.Type, req.Payload)
+	jobID, err := svr.jobService.ProcessNewJob(r.Context(), req.Type, req.Payload, req.RunAt)
 	if err != nil {
 		log.Print(err)
 		errResp := dto.ErrorResponse{

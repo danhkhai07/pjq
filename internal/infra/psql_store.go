@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	SELECT_STAR_JOB = `SELECT id, type, payload, status, priority, retries, max_retries, error, result, logs, created_at, started_at, finished_at FROM jobs `
+	SELECT_STAR_JOB = `SELECT id, type, payload, status, priority, retries, max_retries, error, result, logs, created_at, started_at, finished_at, run_at FROM jobs `
 )
 
 type PSQLStore struct {
@@ -42,7 +42,8 @@ func (s *PSQLStore) Save(ctx context.Context, job domain.Job) error {
             result      = EXCLUDED.result,
             logs        = EXCLUDED.logs,
             started_at  = EXCLUDED.started_at,
-            finished_at = EXCLUDED.finished_at
+            finished_at = EXCLUDED.finished_at,
+			run_at		= EXCLUDED.run_at
 	`,
 		job.ID, job.Type, job.Payload, job.Status,
 		job.Priority, job.Retries, job.MaxRetries,
@@ -129,7 +130,7 @@ func scanJob(row interface{ Scan (...any) error }) (domain.Job, error) {
 		&job.ID, &job.Type, &job.Payload, &job.Status,
         &job.Priority, &job.Retries, &job.MaxRetries,
         &job.Error, &job.Result, &logs,
-        &job.CreatedAt, &job.StartedAt, &job.FinishedAt,
+        &job.CreatedAt, &job.StartedAt, &job.FinishedAt, &job.RunAt,
 	)
 	if err != nil {
 		return domain.Job{}, err

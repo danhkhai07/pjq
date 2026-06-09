@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"time"
 	"encoding/json"
 
 	"pjq/internal/domain"
@@ -9,6 +10,7 @@ import (
 type PostJobRequest struct {
 	Type 			string 			`json:"type"`
 	Payload 		json.RawMessage	`json:"payload"`
+	RunAt			*time.Time		`json:"run_at,omitempty"`
 }
 
 func (req *PostJobRequest) IsMissingFields() bool {

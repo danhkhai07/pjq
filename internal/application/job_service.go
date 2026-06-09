@@ -7,6 +7,7 @@ import (
 	"pjq/internal/domain"
 	"pjq/internal/queue"
 	"pjq/internal/util"
+	"time"
 )
 
 const (
@@ -46,12 +47,14 @@ func (js *JobService) ProcessNewJob(
 	ctx context.Context,
 	jobType string,
 	payload []byte,
+	runAt *time.Time,
 ) (string, error) {
 	jobID := util.GenerateULID()
 	job := domain.NewJob(
 		jobID,
 		jobType,
 		payload,
+
 		PRIORITY_DEFAULT,
 		MAX_RETRIES_DEFAULT,
 	)

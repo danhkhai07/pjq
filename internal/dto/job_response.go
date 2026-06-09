@@ -22,6 +22,7 @@ type JobResponse struct {
 	CreatedAt 	time.Time		`json:"created_at"`
 	StartedAt 	*time.Time		`json:"started_at,omitempty"`
 	FinishedAt 	*time.Time		`json:"finished_at,omitempty"`
+	RunAt		*time.Time		`json:"run_at,omitempty"`
 	Error 		string			`json:"error,omitempty"`
 	Logs 		[]string		`json:"logs,omitempty"`
 }
@@ -39,6 +40,7 @@ func NewJobResponse(job domain.Job) JobResponse {
 		CreatedAt: 		job.CreatedAt,
 		StartedAt: 		job.StartedAt,
 		FinishedAt: 	job.FinishedAt,
+		RunAt: 			job.RunAt,		
 		Error: 			job.Error,
 		Logs: 			job.Logs,
 	}
