@@ -29,8 +29,8 @@ func TestProcessingJob(t *testing.T) {
 
 	go qm.Run(t.Context())
 
-	job1 := domain.NewJob("1", "mock", []byte{}, 1, 0)	
-	qm.PushJob(*job1)
+	job1 := domain.NewJob("1", "mock", []byte{}, nil, 1, 0)	
+	qm.PushJob(job1)
 
 	time.Sleep(2 * time.Second)
 
@@ -47,8 +47,8 @@ func TestRetryAlgorithm(t *testing.T) {
 	qm, store, ctxCancel := testingEnv()
 	defer ctxCancel()
 	
-	job1 := domain.NewJob("1", "mock", []byte{}, 1, 3)	
-	qm.PushJob(*job1)
+	job1 := domain.NewJob("1", "mock", []byte{}, nil, 1, 3)	
+	qm.PushJob(job1)
 
 	time.Sleep(5 * time.Second)
 	job, err := store.Get("1")

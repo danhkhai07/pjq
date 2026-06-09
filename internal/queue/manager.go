@@ -23,6 +23,7 @@ func NewQueueManager(queue *Queue, numWorkers int, registry *Registry, store dom
 		queue: queue,
 		jobCh: make(chan domain.Job, numWorkers),
 		workerPool: make([]*worker, numWorkers),
+		wakeup: make(chan struct{}, 1),
 		numWorkers: numWorkers,
 		registry: registry,
 		store: store,
@@ -32,10 +33,14 @@ func NewQueueManager(queue *Queue, numWorkers int, registry *Registry, store dom
 
 func (qm *QueueManager) PushJob(job domain.Job) {
 	qm.queue.Push(job)
+	qm.WakeUp()
 }
 
 func (qm *QueueManager) WakeUp() {
-	qm.wakeup <-struct{}{}
+	select {
+	case qm.wakeup <- struct{}{}:
+	default:
+	}
 }
 
 func (qm *QueueManager) Run(ctx context.Context) {
