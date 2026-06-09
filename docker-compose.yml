@@ -1,18 +1,43 @@
 services:
   app:
+    container_name: pjq-app
     build: .
     ports:
-      - "8080:${APP_PORT}"
+      - "${APP_PORT}:${APP_PORT}"
     env_file:
       - .env
     environment:
       POSTGRES_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
     depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  migrate:
+    container_name: pjq-migrate
+    image: migrate/migrate
+    env_file:
+      - .env
+    volumes:
+      - ./migrations:/migrations
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable",
+        "up"
+      ]
+    depends_on:
       postgres:
         condition: service_healthy
 
   postgres:
+    container_name: pjq-postgres
     image: postgres:16
+    ports:
+      - "5432"
     env_file:
       - .env
     volumes:
