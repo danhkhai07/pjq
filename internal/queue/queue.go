@@ -36,6 +36,10 @@ func (q *Queue) Pop() (domain.Job, bool) {
 	return head, true
 }
 
+func (q *Queue) Peek() *domain.Job {
+	return q.heap.Peek()
+}
+
 func (q *Queue) Len() int {
 	q.mu.Lock()
 	defer q.mu.Unlock()
