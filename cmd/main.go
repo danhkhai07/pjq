@@ -23,6 +23,7 @@ func main() {
 	store, err 		:= infra.NewPSQLStore(DB_URL)
 	if err != nil {
 		fmt.Println("DB failed to start.")
+		return
 	}
 	registry		:= queuePackage.NewRegistry()
 	primeHandler	:= infra.NewPrimeCalcHandler()
