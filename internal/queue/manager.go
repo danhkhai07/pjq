@@ -116,8 +116,7 @@ func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan dom
 			job.FinishedAt = &now
 			if err != nil {
 				changeStatus(&job, domain.StatusFailed)
-				job.Error = err.Error()
-				job.Logs = append(job.Logs, err.Error())
+				logError(&job, err)
 				if job.Retries < job.MaxRetries {
 					changeStatus(&job, domain.StatusRetrying)
 					qm.retry(job)
@@ -133,18 +132,25 @@ func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan dom
 	}
 }
 
+func logError(job *domain.Job, err error) {
+	logTime := time.Now().Local().Local().String()
+	job.Error = err.Error()
+	job.Logs = append(job.Logs, logTime + " " + err.Error())
+}
+
 func changeStatus(job *domain.Job, status domain.Status) {
+	logTime := time.Now().Local().Local().String()
 	job.Status = status
 	job.Logs = append(
 		job.Logs, 
-		fmt.Sprintf("QueueManager: Changed job status to '%s'.", status),
+		fmt.Sprintf("%s QueueManager: Changed job status to '%s'.", logTime, status),
 	)
 }
 
 func (qm *QueueManager) retry(job domain.Job) {
 	now := time.Now()
 	job.Retries++
-	// exponential back-off with power of 2
+	// exponential back-off with power of 2: 5s, 10s, 20s, 40s,...
 	runAt := now.Add(BASE_RETRY_BACKOFF * time.Duration(math.Pow(2, float64(job.Retries-1))))
 	job.RunAt = &runAt
 	qm.PushJob(job)

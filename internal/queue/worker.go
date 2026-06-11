@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync/atomic"
+	"time"
 
 	"pjq/internal/domain"
 )
@@ -33,8 +34,9 @@ func (w *worker) IsBusy() bool {
 }
 
 func (w *worker) Log(message string) {
+	logTime := time.Now()
 	if w.job != nil {
-		w.job.Logs = append(w.job.Logs, message)
+		w.job.Logs = append(w.job.Logs, logTime.Local().String() + " " + message)
 		return
 	} 
 	fmt.Fprintf(os.Stderr, "error: cannot log with no job as worker id %d\n", w.id)
