@@ -3,9 +3,14 @@ package queue
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"pjq/internal/domain"
+)
+
+const (
+	BASE_RETRY_BACKOFF = 5 * time.Second
 )
 
 type QueueManager struct {
@@ -137,6 +142,10 @@ func changeStatus(job *domain.Job, status domain.Status) {
 }
 
 func (qm *QueueManager) retry(job domain.Job) {
+	now := time.Now()
 	job.Retries++
+	// exponential back-off with power of 2
+	runAt := now.Add(BASE_RETRY_BACKOFF * time.Duration(math.Pow(2, float64(job.Retries-1))))
+	job.RunAt = &runAt
 	qm.PushJob(job)
 }
