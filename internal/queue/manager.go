@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"pjq/internal/domain"
+	"pjq/internal/util"
 )
 
 const (
@@ -16,18 +17,18 @@ const (
 type QueueManager struct {
 	queue		*Queue
 	jobCh 		chan domain.Job
-	workerPool 	[]*worker
+	workerPool 	[]Worker
 	wakeup		chan struct{}
 	numWorkers 	int
-	registry  	*Registry
+	registry  	*util.Registry
 	store 		domain.JobStore
 }
 
-func NewQueueManager(queue *Queue, numWorkers int, registry *Registry, store domain.JobStore) *QueueManager {
+func NewQueueManager(queue *Queue, numWorkers int, registry *util.Registry, store domain.JobStore) *QueueManager {
 	qm := QueueManager{
 		queue: queue,
 		jobCh: make(chan domain.Job, numWorkers),
-		workerPool: make([]*worker, numWorkers),
+		workerPool: make([]Worker, numWorkers),
 		wakeup: make(chan struct{}, 1),
 		numWorkers: numWorkers,
 		registry: registry,
@@ -103,7 +104,7 @@ func (qm *QueueManager) Run(ctx context.Context) {
 	}
 }
 
-func (qm *QueueManager) RunWorker(ctx context.Context, w *worker, jobCh chan domain.Job) (err error) {
+func (qm *QueueManager) RunWorker(ctx context.Context, w Worker, jobCh chan domain.Job) (err error) {
 	for {
 		select {
 		case job := <-jobCh:
