@@ -15,8 +15,8 @@ const (
 )
 
 type QueueManager struct {
-	queue		*Queue
-	jobCh 		chan domain.Job
+	fqueue		*FrontQueue
+	bqueue 		chan domain.Job
 	workerPool 	[]Worker
 	wakeup		chan struct{}
 	numWorkers 	int
@@ -24,10 +24,10 @@ type QueueManager struct {
 	store 		domain.JobStore
 }
 
-func NewQueueManager(queue *Queue, numWorkers int, registry *util.Registry, store domain.JobStore) *QueueManager {
+func NewQueueManager(fqueue *FrontQueue, numWorkers int, registry *util.Registry, store domain.JobStore) *QueueManager {
 	qm := QueueManager{
-		queue: queue,
-		jobCh: make(chan domain.Job, numWorkers),
+		fqueue: fqueue,
+		bqueue: make(chan domain.Job, numWorkers),
 		workerPool: make([]Worker, numWorkers),
 		wakeup: make(chan struct{}, 1),
 		numWorkers: numWorkers,
@@ -38,7 +38,7 @@ func NewQueueManager(queue *Queue, numWorkers int, registry *util.Registry, stor
 }
 
 func (qm *QueueManager) PushJob(job domain.Job) {
-	qm.queue.Push(job)
+	qm.fqueue.Push(job)
 	qm.WakeUp()
 }
 
@@ -53,7 +53,7 @@ func (qm *QueueManager) Run(ctx context.Context) {
 	for i := range qm.workerPool {
 		w := newWorker(i, qm.registry)
 		qm.workerPool[i] = w
-		go qm.RunWorker(ctx, w, qm.jobCh)
+		go qm.RunWorker(ctx, w, qm.bqueue)
 	}
 
 	for {
@@ -61,7 +61,7 @@ func (qm *QueueManager) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			next := qm.queue.Peek()
+			next := qm.fqueue.Peek()
 
 			if next == nil {
 				select {
@@ -74,9 +74,9 @@ func (qm *QueueManager) Run(ctx context.Context) {
 
 			wait := time.Until(*next.RunAt)
 			if wait <= 0 {
-				job, ok := qm.queue.Pop()
+				job, ok := qm.fqueue.Pop()
 				if ok {
-					qm.jobCh <- job
+					qm.bqueue <- job
 				}
 				continue
 			}
@@ -94,9 +94,9 @@ func (qm *QueueManager) Run(ctx context.Context) {
 				}
 				continue
 			case <-timer.C:
-				job, ok := qm.queue.Pop()
+				job, ok := qm.fqueue.Pop()
 				if ok {
-					qm.jobCh <- job
+					qm.bqueue <- job
 				}
 				continue
 			}
@@ -104,10 +104,10 @@ func (qm *QueueManager) Run(ctx context.Context) {
 	}
 }
 
-func (qm *QueueManager) RunWorker(ctx context.Context, w Worker, jobCh chan domain.Job) (err error) {
+func (qm *QueueManager) RunWorker(ctx context.Context, w Worker, bqueue chan domain.Job) (err error) {
 	for {
 		select {
-		case job := <-jobCh:
+		case job := <-bqueue:
 			now := time.Now()
 			if job.StartedAt == nil {
 				job.StartedAt = &now
