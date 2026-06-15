@@ -61,7 +61,6 @@ func (w *Worker) process(ctx context.Context, job *domain.Job) error {
 	w.busy.Store(true)
 	w.job = job
 	defer w.busy.Store(false)
-	defer func() { w.job = nil }()
 
 	handler, err := w.registry.Get(w.job.Type)
 	if err != nil {
