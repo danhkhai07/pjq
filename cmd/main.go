@@ -6,8 +6,13 @@ import (
 	"os"
 	"pjq/internal/api"
 	"pjq/internal/application"
-	"pjq/internal/infra"
-	queuePackage "pjq/internal/queue"
+	"pjq/internal/queue"
+	"pjq/internal/util"
+
+	queueinfra "pjq/internal/infra/back_queue"
+	storeinfra "pjq/internal/infra/store"
+	handlerinfra "pjq/internal/infra/handler"
+	workerinfra "pjq/internal/infra/worker"
 
 	"github.com/joho/godotenv"
 )
@@ -19,18 +24,31 @@ func main() {
 	}
 	DB_URL := os.Getenv("POSTGRES_URL")
 
-	queue 			:= queuePackage.NewQueue()
-	store, err 		:= infra.NewPSQLStore(DB_URL)
+	fqueue 			:= queue.NewQueue()
+	bqueue			:= queueinfra.NewInProcessBackQueue(5)
+	store, err 		:= storeinfra.NewPSQLStore(DB_URL)
 	if err != nil {
 		fmt.Println("DB failed to start.")
 		return
 	}
-	registry		:= queuePackage.NewRegistry()
-	primeHandler	:= infra.NewPrimeCalcHandler()
+	registry		:= util.NewRegistry()
+	primeHandler	:= handlerinfra.NewPrimeCalcHandler()
 	registry.Register("prime", primeHandler)
 
-	queueManager 	:= queuePackage.NewQueueManager(queue, 3, registry, store)
+	queueManager 	:= queue.NewQueueManager(fqueue, bqueue, 3, registry, store)
 	jobService 		:= application.NewJobService(store, queueManager)
+
+	// spawn workers
+	workers := make([]*workerinfra.Worker, 0)
+	for i := 1; i <= 3; i++ {
+		worker := workerinfra.NewInProcessWorker(
+			registry,
+			store,
+			queueManager,
+		)
+		workers = append(workers, worker)
+		go worker.RunWorker(context.Background())
+	}
 
 	svr := api.NewServer("0.0.0.0:8888", jobService)
 	fmt.Println("App started!")
