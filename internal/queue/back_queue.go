@@ -4,6 +4,6 @@ import (
 	"pjq/internal/domain"
 )
 
-type BQueue interface {
+type BackQueue interface {
 	Push(job *domain.Job) error
 }
