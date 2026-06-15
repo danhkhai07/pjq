@@ -1,14 +1,11 @@
-package backqueue
+package infra 
 
 import (
-	"os"
-	"pjq/internal/domain"
-	"strconv"
 	"time"
+	"pjq/internal/domain"
 )
 
 var (
-	DEFAULT_CHAN_SIZE, _ = strconv.ParseInt(os.Getenv("DEFAULT_CHAN_SIZE"), 10, 32)
 	DEFAULT_BLOCKING_TIME = 100 * time.Millisecond
 )
 
@@ -16,9 +13,16 @@ type InProcessBackQueue struct {
 	c 	chan domain.Job
 }
 
+func NewInProcessBackQueue(size int) *InProcessBackQueue {
+	return &InProcessBackQueue{
+		c: make(chan domain.Job, size),
+	}
+}
+
 // Blocking until receive job
-func (q *InProcessBackQueue) Push(job *domain.Job) {
+func (q *InProcessBackQueue) Push(job *domain.Job) error {
 	q.c <- *job
+	return nil
 }
 
 // Wait for 100ms before returning false
