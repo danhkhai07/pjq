@@ -25,12 +25,13 @@ const (
 )
 
 type Worker struct {
-	id 			int
-	job			*domain.Job
-	registry	*util.Registry
-	busy 		atomic.Bool
-	store		domain.JobStore
-	queue		*queue.QueueManager
+	id 				int
+	job				*domain.Job
+	registry		*util.Registry
+	busy 			atomic.Bool
+	store			domain.JobStore
+	consumeJob		func () (*domain.Job, bool)
+	pushJob			func (*domain.Job)
 }
 
 func NewInProcessWorker(
@@ -43,7 +44,8 @@ func NewInProcessWorker(
 		id: workerCounter,
 		registry: registry,
 		store: store,
-		queue: queue,
+		consumeJob: queue.PopJob,
+		pushJob: queue.PushJob,
 	}
 }
 
@@ -51,7 +53,7 @@ func (w *Worker) GetID() int { return w.id }
 
 func (w *Worker) IsBusy() bool { return w.busy.Load() }
 
-func (w *Worker) Process(ctx context.Context, job *domain.Job) error {
+func (w *Worker) process(ctx context.Context, job *domain.Job) error {
 	if w.IsBusy() {
 		return fmt.Errorf("error: worker id %d is busy\n", w.id)
 	}
@@ -76,17 +78,23 @@ func (w *Worker) Process(ctx context.Context, job *domain.Job) error {
 	return nil
 }
 
-func (w *Worker) RunWorker(ctx context.Context, bqueue chan domain.Job) (err error) {
+func (w *Worker) RunWorker(ctx context.Context) (err error) {
 	for {
 		select {
-		case job := <-bqueue:
-			w.job = &job
+		case <-ctx.Done():
+			return nil
+		default:
+			job, ok := w.consumeJob()
+			if !ok {
+				continue
+			}
+			w.job = job
 			now := time.Now()
 			if job.StartedAt == nil {
 				job.StartedAt = &now
 			}
 			w.changeStatus(domain.StatusRunning)
-			err = w.Process(ctx, &job)
+			err = w.process(ctx, job)
 			job.FinishedAt = &now
 			if err != nil {
 				w.changeStatus(domain.StatusFailed)
@@ -98,10 +106,8 @@ func (w *Worker) RunWorker(ctx context.Context, bqueue chan domain.Job) (err err
 			} else {
 				w.changeStatus(domain.StatusDone)
 			}
-			w.store.Save(ctx, job)
+			w.store.Save(ctx, *job)
 			time.Sleep(10 * time.Millisecond)
-		case <-ctx.Done():
-			return nil
 		}
 		w.job = nil
 	}
@@ -132,5 +138,5 @@ func (w *Worker) retry() {
 	// exponential back-off with power of 2: 5s, 10s, 20s, 40s,...
 	runAt := now.Add(BASE_RETRY_BACKOFF * time.Duration(math.Pow(2, float64(w.job.Retries-1))))
 	w.job.RunAt = &runAt
-	w.queue.PushJob(*w.job)
+	w.pushJob(w.job)
 }
