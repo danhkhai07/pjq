@@ -2,10 +2,20 @@ package queue
 
 import (
 	"context"
+	"errors"
+	"log"
 	"time"
 
 	"pjq/internal/domain"
 	"pjq/internal/util"
+)
+
+var (
+	ErrFrontQueueNonPoppable = errors.New("front queue is non-poppable")
+)
+
+const (
+	DISPATCH_RETRY_BACKOFF_SECONDS = 5
 )
 
 type QueueManager struct {
@@ -37,9 +47,13 @@ func NewQueueManager(
 	return &qm
 }
 
-func (qm *QueueManager) PushJob(job domain.Job) {
-	qm.fqueue.Push(job)
+func (qm *QueueManager) PushJob(job *domain.Job) {
+	qm.fqueue.Push(*job)
 	qm.WakeUp()
+}
+
+func (qm *QueueManager) PopJob() (*domain.Job, bool) {
+	return qm.bqueue.Pop()
 }
 
 func (qm *QueueManager) WakeUp() {
@@ -68,10 +82,7 @@ func (qm *QueueManager) Run(ctx context.Context) {
 
 			wait := time.Until(*next.RunAt)
 			if wait <= 0 {
-				job, ok := qm.fqueue.Pop()
-				if ok {
-					qm.bqueue.Push(&job)
-				}
+				qm.dispatchToBackQueue(0, nil)
 				continue
 			}
 			timer := time.NewTimer(wait)
@@ -88,12 +99,43 @@ func (qm *QueueManager) Run(ctx context.Context) {
 				}
 				continue
 			case <-timer.C:
-				job, ok := qm.fqueue.Pop()
-				if ok {
-					qm.bqueue.Push(&job)
-				}
+				qm.dispatchToBackQueue(0, nil)
 				continue
 			}
 		}
 	}
+}
+
+// Default job param to nil so that front queue is popped
+func (qm *QueueManager) dispatchToBackQueue(i int, job *domain.Job) {
+	var err error
+	if job == nil {
+		j, ok := qm.fqueue.Pop()
+		if !ok {
+			err = ErrFrontQueueNonPoppable
+		}
+		job = &j
+	}
+	if !isProcessable(job) {
+		return
+	}
+	if err == nil { err = qm.bqueue.Push(job) }
+	if err != nil {
+		log.Println(err.Error())
+		if i < 5 {
+			i++
+			log.Println(
+				"WARNING: Dispatching to %s failed. Retrying attempt number %d in %s seconds.",
+				qm.bqueue.GetName(),
+				i,
+				DISPATCH_RETRY_BACKOFF_SECONDS,
+			)
+			time.Sleep(DISPATCH_RETRY_BACKOFF_SECONDS * time.Second)
+			qm.dispatchToBackQueue(i, job)
+		}
+	}
+}
+
+func isProcessable(job *domain.Job) bool {
+	return job.Status == domain.StatusPending || job.Status == domain.StatusRetrying
 }

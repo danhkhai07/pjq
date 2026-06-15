@@ -5,5 +5,8 @@ import (
 )
 
 type BackQueue interface {
-	Push(job *domain.Job) error
+	Push(*domain.Job) error
+	Pop() (*domain.Job, bool)
+
+	GetName() string
 }
