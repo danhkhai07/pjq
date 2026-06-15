@@ -21,7 +21,6 @@ const (
 type QueueManager struct {
 	fqueue		*FrontQueue
 	bqueue 		BackQueue
-	workerPool 	[]Worker
 	wakeup		chan struct{}
 	numWorkers 	int
 	registry  	*util.Registry
@@ -38,7 +37,6 @@ func NewQueueManager(
 	qm := QueueManager{
 		fqueue: fqueue,
 		bqueue: bqueue,
-		workerPool: make([]Worker, numWorkers),
 		wakeup: make(chan struct{}, 1),
 		numWorkers: numWorkers,
 		registry: registry,
