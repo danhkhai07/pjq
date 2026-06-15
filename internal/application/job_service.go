@@ -36,7 +36,7 @@ func (js *JobService) Run(ctx context.Context) {
 		fmt.Fprintf(os.Stderr, "Failed to recover jobs from database: %s\n", err)
 	} else {
 		for _, job := range jobs {
-			js.queueManager.PushJob(job)
+			js.queueManager.PushJob(&job)
 		}
 	}
 	js.queueManager.Run(ctx)
@@ -62,7 +62,7 @@ func (js *JobService) ProcessNewJob(
 	if err != nil {
 		return "", err
 	}
-	js.queueManager.PushJob(job)
+	js.queueManager.PushJob(&job)
 	return jobID, nil
 }
 
