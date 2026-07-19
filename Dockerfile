@@ -1,3 +1,4 @@
+# Dockerfile for pjq job queue service
 FROM golang:1.25.6-alpine
 
 WORKDIR /usr/src/app
